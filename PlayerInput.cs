@@ -8,7 +8,7 @@ public class PlayerInput : CustomMonoBehaviour
 	int poo { get; set; }
 
 	[Header("Settings")]
-	public float buttonPressThreshold;
+	public float buttonPressThreshold; 
 	//public float rightStickSensitivity;
 	//public float leftStickSensitivity;
 	public float delayThreshold;
