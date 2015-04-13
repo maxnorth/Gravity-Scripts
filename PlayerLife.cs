@@ -108,7 +108,7 @@ public class PlayerLife : MonoBehaviour {
 			Vector3 projectedVelocity = Vector3.Project (player.motion.prevVelocity, rigidbody.velocity);
 			Vector3 relativeVelocity = rigidbody.velocity - projectedVelocity;
 			
-			if (relativeVelocity.sqrMagnitude >= velocityHarmThreshold.Square())
+			if (relativeVelocity.sqrMagnitude >= velocityHarmThreshold.Squared() )
 			{
 				health -= Mathf.Clamp (relativeVelocity.magnitude - velocityHarmThreshold, 0, Mathf.Infinity) * rigidbody.mass * collisionDmgFactor ;
 				print (Time.frameCount + "Damage " + (relativeVelocity.magnitude - velocityHarmThreshold) * rigidbody.mass * collisionDmgFactor);

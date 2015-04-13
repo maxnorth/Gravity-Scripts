@@ -96,10 +96,10 @@ public class PlayerGravity : CustomMonoBehaviour
 			Physics.Raycast (new Ray(transform.position, distanceFromCollider), out player.state.groundSurfaceRayHit, Mathf.Infinity, player.motion.ignorePlayerMask);
 			distanceToGroundSurface = player.state.groundSurfaceRayHit.point - transform.position;
 
-			if (distanceToGroundSurface.sqrMagnitude < Global.Square(player.motion.orientationThresholdLength))
+			if (distanceToGroundSurface.sqrMagnitude < player.motion.orientationThresholdLength.Squared())
 			{
 
-				player.state.orientPlayer = true;
+				player.state.orientCamera = true;
 				//Make sure this is correct
 				distanceFromGround = player.state.groundSurfaceRayHit.distance;
 				
@@ -108,7 +108,7 @@ public class PlayerGravity : CustomMonoBehaviour
 					bPointGrav = false;
 				}
 			}
-			else if (!player.state.reachedGravSource && gravitySource != startingGravitySource) player.state.orientPlayer = false;
+			else if (!player.state.reachedGravSource && gravitySource != startingGravitySource) player.state.orientCamera = false;
 			
 			
 
@@ -138,7 +138,7 @@ public class PlayerGravity : CustomMonoBehaviour
 		if (input.toggleGravity.Tapped)
 		{
 			if (!gravityOn) gravitySource = startingGravitySource;
-			else player.state.orientPlayer = false;
+			else player.state.orientCamera = false;
 			gravityOn = !gravityOn;
 			player.motion.bAutoOrientMotion = false;
 			player.state.reachedGravSource = false;

@@ -245,7 +245,7 @@ public class PlayerMotion : CustomMonoBehaviour
 		
 	void SetPlayerOrientation()
 	{	
-	if (player.state.orientPlayer)
+	if (player.state.orientCamera)
 	{
 		CalculateGravityRotationFactor();
 
@@ -312,7 +312,7 @@ public class PlayerMotion : CustomMonoBehaviour
 			bGravOn = true;
 			bRunning = true;
 			state.touchingGround = true;
-			state.orientPlayerntPlayer = true;
+			state.orientCamerantPlayer = true;
 			bTouchingWall = false;
 		}*/
 	}
@@ -333,7 +333,7 @@ public class PlayerMotion : CustomMonoBehaviour
 	void SetAltMotionDirection ()
 	{
 
-		if (player.state.orientPlayer && player.state.reachedGravSource)
+		if (player.state.orientCamera && player.state.reachedGravSource)
 		{
 			Vector3 localGravity = player.gravity.source.transform.InverseTransformDirection(-player.gravity.vector);
 			bool blOnEdge = !((Mathf.Abs(localGravity.x) <= forwardHandlingThreshold && Mathf.Abs(localGravity.y) <= forwardHandlingThreshold) || (Mathf.Abs(localGravity.y) <= forwardHandlingThreshold && Mathf.Abs(localGravity.z) <= forwardHandlingThreshold) || (Mathf.Abs(localGravity.z) <= forwardHandlingThreshold && Mathf.Abs(localGravity.x) <= forwardHandlingThreshold));

@@ -45,8 +45,8 @@ public class PlayerCamera : CustomMonoBehaviour
 	[HideInInspector] public Transform t;
 	[HideInInspector] public  float rotationY;
 	
-	
-	
+
+
 	void Awake()
 	{
 		player = GetComponentInParent<PlayerManager> ();
@@ -98,7 +98,7 @@ public class PlayerCamera : CustomMonoBehaviour
 		
 		if (inFirstPerson)
 		{
-			if (player.state.orientPlayer) 
+			if (player.state.orientCamera) 
 			{
 				float camGravityAngle = Vector3.Angle (transform.forward, player.gravity.gravityVector);
 				//keeps player from looking up or down beyond local Y axis
@@ -121,7 +121,7 @@ public class PlayerCamera : CustomMonoBehaviour
 		}
 		else
 		{
-			if (player.state.orientPlayer) 
+			if (player.state.orientCamera) 
 			{
 				float camGravityAngle = Vector3.Angle (transform.forward, player.gravity.gravityVector);
 				//keeps player from looking up or down beyond local Y axis
@@ -148,7 +148,7 @@ public class PlayerCamera : CustomMonoBehaviour
 	
 	void CameraUprightOrient () 
 	{
-		if (player.state.orientPlayer)
+		if (player.state.orientCamera)
 		{
 			//rotate the player more slowly when farther away, and faster as you get closer
 			float rotationFactor = distanceFromGroundCameraOrientationThreshold / player.gravity.distanceFromGround;

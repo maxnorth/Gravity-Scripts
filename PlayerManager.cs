@@ -35,13 +35,15 @@ public class PlayerManager : CustomMonoBehaviour {
 	public class PlayerStates 
 	{
 		private PlayerManager player;
-		public bool orientPlayer;
+		public bool orientCamera;
+		public bool groundMotion;
 		public bool touchingWall;
 		public bool touchingGround;
 		public RaycastHit groundSurfaceRayHit;
 		public bool reachedGravSource;
 		public bool alive {get {return this.player.life.lifeState.alive;} set {this.player.life.lifeState.alive = value;}}
 		public bool inFirstPerson {get {return this.player.camera.inFirstPerson;} set {this.player.camera.inFirstPerson = value;}}
+
 
 		public PlayerStates(PlayerManager pM) {this.player = pM;}
 	}
