@@ -3,48 +3,65 @@ using System;
 
 public class PlayerCamera : CustomMonoBehaviour  
 {
+	//references
 	private PlayerManager player;
 	private PlayerInput input;
-	
-	[Header("Input")]
+	[HideInInspector] public Transform t;
+
+	//fields
+	[Header("Look Input")]
 	[Range(0, 1500)]public int lookSensitivity;
 	public float zRotationSensitivity;
+
+	private float rotationX;
+	[HideInInspector] public float rotationY;
 	
-	[Header("Misc.")]
+	[Header("Auto Rotation")]
 	public float zAutoRotationSpeed;
-	public float distanceFromGroundCameraOrientationThreshold;
-	public LayerMask thirdPersonCameraLocationMask;
-	public bool inFirstPerson = true;
-	public GameObject playerWeaponMesh;
+	public float baseRotationFactor;
+	private float camUpWorldUpAngle;
+	private float camGravAngle;
+	public float startOrientationLength;
+	public float rotationSpeedCap;
+
+	[Header("Interaction Detection")]
+	public Transform interactionDetector;
+	public float firstPersonDetectorOffset;
+	public float thirdPersonDetectorOffset;
 	
+	[Header("View Mode")]
+	public bool inFirstPerson = true;
+	public SkinnedMeshRenderer characterRenderer;
+
 	[Header("Positioning")]
-	public MyCurveControlledBob headbob = new MyCurveControlledBob();
-	public Vector3 offset3rdPersonPivot;
 	public Vector3 cameraHeadOffset;
+
+	public Vector3 offset3rdPersonPivot;
 	public Vector3 thirdPersonCameraOffset;
 	public float camera3rdPersonDistance;
+
+	public LayerMask thirdPersonCameraLocationMask;
+	
 	public float cameraAngleDistanceFactor;
-	[Range(0, 5)] public float thirdPersonBobbleFactor;
-	public float deadPivotDistance;
-	
-	[NonSerialized] public Vector3 prevTransformForward;
-	
-	private float camUpWorldUpAngle;
-	private float rotationX;
 	private float angleBasedDistance;
-	private float camGravAngle;
+
 	private Vector3 currentPivot;
-	
-	private Transform rotationTransform { get { return player.alive ? player.t : transform; } }
-	
-	public SkinnedMeshRenderer characterRenderer;
-	
+
+	[Header("Bobble")]
+	public MyCurveControlledBob headbob = new MyCurveControlledBob();
+	[Range(0, 5)] public float thirdPersonBobbleFactor;
 	private Vector3 headBobble;
 	
-	//player.camera references this CameraController script. player.camera.t is a convenient reference to its Transform
-	[HideInInspector] public Transform t;
-	[HideInInspector] public  float rotationY;
-	
+	[Header("Deathcam")]
+	public float deadPivotDistance;
+
+	private Transform rotationTransform { get { return player.alive ? player.t : transform; } }
+
+	[Header("Debug")]
+	public GameObject playerWeaponMesh;
+	[NonSerialized] public Vector3 prevTransformForward;
+
+
 
 
 	void Awake()
@@ -62,7 +79,7 @@ public class PlayerCamera : CustomMonoBehaviour
 	}
 	
 	void Update () 
-	{	
+	{
 		PreUpdateSetVariables ();
 		
 		TogglePerspectiveMode ();
@@ -148,11 +165,11 @@ public class PlayerCamera : CustomMonoBehaviour
 	
 	void CameraUprightOrient () 
 	{
-		if (player.state.orientCamera)
+		if (player.gravity.distanceToGroundSurface.sqrMagnitude <= startOrientationLength.Squared())
 		{
 			//rotate the player more slowly when farther away, and faster as you get closer
-			float rotationFactor = distanceFromGroundCameraOrientationThreshold / player.gravity.distanceFromGround;
-			
+			float rotationFactor = Mathf.Clamp (baseRotationFactor / player.gravity.distanceFromGround.Squared(), 0, rotationSpeedCap);
+
 			Quaternion uprightTargetRotation = Quaternion.LookRotation (transform.forward, -player.gravity.distanceFromCollider);
 			transform.rotation = Quaternion.Lerp(transform.rotation, uprightTargetRotation, zAutoRotationSpeed * rotationFactor);
 		}
@@ -190,11 +207,7 @@ public class PlayerCamera : CustomMonoBehaviour
 				characterRenderer.enabled = true;
 		}
 	}
-	
-	[Header("Interaction Detection")]
-	public Transform interactionDetector;
-	public float firstPersonDetectorOffset;
-	public float thirdPersonDetectorOffset;
+
 	
 	void PositionCameraInteractionDetector()
 	{

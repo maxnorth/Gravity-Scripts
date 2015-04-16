@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 
 
+
 public class PlayerMotion : CustomMonoBehaviour 
 {
 	private PlayerManager player;
@@ -11,23 +12,29 @@ public class PlayerMotion : CustomMonoBehaviour
 	public Transform feet;
 	public Vector3 feetOffset;
 
-	[Header("Motion")]
+	[Header("Ground Motion Sensitivity")]
 	public float motionSensitivity;
 	public float runMultiplier;
 	public float groundControl = 1.0f;
 	public float airSpeedLimit = 5;
-	public float jumpSensitivity = 5;
-	public float kinematicMotionRatio = 5;
-	public float forwardHandlingThreshold = .01f;
+
 	public TimedInput timedJump;
+	public float jumpSensitivity = 5;
 
+	[Header("Ground Detection")]
 
-	[Header("Zero G")]
-	public float orientationThresholdLength;
-	public float rotationSpeed;
-	public float inertialMotionFocus;
+	[Header("Free Motion")]
 	public float zeroGMotionSensitivity;
+	public float inertialMotionFocus;
 	
+	[Header("Rigidbody Grav Source")]
+	public float kinematicMotionRatio = 5;
+
+	[Header("Auto Rotation")]
+	public float baseRotationFactor;
+	public float zeroGravRotationSpeed;
+	public float startOrientationDistance;
+
 
 	[Header("Wall Walking")]
 	public float autoOrientationMotionThreshold;
@@ -36,11 +43,16 @@ public class PlayerMotion : CustomMonoBehaviour
 	public float autoOrientDifferenceThreshold;
 	public float cornerVelocityAdjustmentFactor;
 	public float maxCornerVelocityAdjustment;
+	public float forwardHandlingThreshold = .01f;
 	
-	[Header("Misc.")]
+	[Header("Wall Run Rotation")]
 	public float wallRunRotationRate = 5;
+
+	[Header("Wall Run Detection")]
 	public LayerMask ignorePlayerMask;
 
+	[Header("Unknown")]
+	
 	[HideInInspector] public bool bAutoOrientMotion;
 
 	private RaycastHit edgeGroundedHit;
@@ -245,23 +257,23 @@ public class PlayerMotion : CustomMonoBehaviour
 		
 	void SetPlayerOrientation()
 	{	
-	if (player.state.orientCamera)
-	{
-		CalculateGravityRotationFactor();
+		if (player.state.orientCamera)
+		{
+			CalculateGravityRotationFactor();
 
 			if (player.state.touchingGround)
 				playerOrientationTarget = Quaternion.LookRotation (player.gravity.distanceFromCollider, forwardMotion) * Quaternion.Euler (-90, 0, 0);
 			else
 				playerOrientationTarget = Quaternion.LookRotation (player.gravity.distanceFromCollider, player.camera.t.forward) * Quaternion.Euler (-90, 0, 0);
 
-			transform.rotation = Quaternion.Lerp (transform.rotation, playerOrientationTarget, rotationSpeed * rotationFactor * Time.deltaTime);
+			transform.rotation = Quaternion.Lerp (transform.rotation, playerOrientationTarget, rotationFactor * Time.deltaTime);
 		}
-		else transform.rotation = Quaternion.Lerp (transform.rotation, player.camera.t.rotation, rotationSpeed * Time.deltaTime);
+		else transform.rotation = Quaternion.Lerp (transform.rotation, player.camera.t.rotation, zeroGravRotationSpeed * Time.deltaTime);
 	}
 
 	void CalculateGravityRotationFactor()
 	{
-		rotationFactor = orientationThresholdLength / player.gravity.distanceFromGround;
+		rotationFactor = baseRotationFactor / player.gravity.distanceFromGround * player.gravity.distanceFromGround;
 	}
 
 	void OnCollisionEnter(Collision collision)
@@ -489,5 +501,4 @@ public class PlayerMotion : CustomMonoBehaviour
 
 	
 }
-
 

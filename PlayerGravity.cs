@@ -20,17 +20,34 @@ public class PlayerGravity : CustomMonoBehaviour
 	public bool gravityVelocityFocus;
 	public float orthogonalVelocityReduction;
 
+	[Header("Select Gravity")]
+	private bool didSelectObject;
+	private ObjectGravity selectedGravObject;
+	private RaycastHit objectGravRayHit;
 
+	[Header("Lengths")]
 	[HideInInspector] public Vector3 distanceFromCollider;
-	[HideInInspector] public float gravSelectTimer;
-	[HideInInspector] public float gravToggleTimer;
+
+	[HideInInspector] public float distanceFromGround;
+	private Vector3 distanceFromSelectedPoint;
+	[HideInInspector] public Vector3 distanceToGroundSurface;
+
+	[Header("Gravity Info")]
 	[HideInInspector] public Collider gravitySource;
 	[HideInInspector] public Vector3 gravityVector;
 	[HideInInspector] public RaycastHit gravRayHit;
 	[HideInInspector] public bool bPointGrav;
-	[HideInInspector] public float distanceFromGround;
+
+	[Header("Rigidbody Gravity Source")]
+	private Quaternion gravSourcePrevRotation;
+	private Vector3 gravSourcePrevPosition;
+
+	//previous values for reference
 	[HideInInspector] public Vector3 prevGravityVector;
 	[HideInInspector] public Collider prevGravitySource;
+	private bool prevGravityOn;
+
+	//based on current gravityVector and prevGravityVector 
 	[HideInInspector] public Vector3 rotationAxis;
 	[HideInInspector] public float rotationAngle;
 	
@@ -39,19 +56,9 @@ public class PlayerGravity : CustomMonoBehaviour
 	public Collider source { get { return gravitySource; } set { gravitySource = value; } }
 	public bool on { get { return gravityOn; } set { gravityOn = value; } }
 
-	private Vector3 distanceFromRayHitPoint;
-	private bool prevGravityOn;
-	private bool blGravRayHit;
-	private Rigidbody gravSelectedRigidbody;
-	private ObjectGravity selectedGravObject;
-	private RaycastHit objectGravRayHit;
-	private Quaternion gravSourcePrevRotation;
-	private Vector3 gravSourcePrevPosition;
-	private Vector3 distanceToGroundSurface;
-	
-	void EmptyDown() {}
-	void EmptyUp() {}
-	
+
+
+
 	void Awake()
 	{
 		player = GetComponentInParent<PlayerManager> ();
@@ -91,19 +98,19 @@ public class PlayerGravity : CustomMonoBehaviour
 		{
 			distanceFromCollider = gravitySource.NearestPoint(transform.position) - transform.position;
 
-			if (gravRayHit.collider) distanceFromRayHitPoint = gravRayHit.point - transform.position;
+			if (gravRayHit.collider) distanceFromSelectedPoint = gravRayHit.point - transform.position;
 
 			Physics.Raycast (new Ray(transform.position, distanceFromCollider), out player.state.groundSurfaceRayHit, Mathf.Infinity, player.motion.ignorePlayerMask);
 			distanceToGroundSurface = player.state.groundSurfaceRayHit.point - transform.position;
 
-			if (distanceToGroundSurface.sqrMagnitude < player.motion.orientationThresholdLength.Squared())
+			if (distanceToGroundSurface.sqrMagnitude < player.motion.startOrientationDistance.Squared())
 			{
 
 				player.state.orientCamera = true;
 				//Make sure this is correct
 				distanceFromGround = player.state.groundSurfaceRayHit.distance;
 				
-				if (bPointGrav && gravitySource.Raycast (new Ray(transform.position, distanceFromRayHitPoint), out player.state.groundSurfaceRayHit, gravPointNearnessThreshold))
+				if (bPointGrav && gravitySource.Raycast (new Ray(transform.position, distanceFromSelectedPoint), out player.state.groundSurfaceRayHit, gravPointNearnessThreshold))
 				{
 					bPointGrav = false;
 				}
@@ -112,7 +119,7 @@ public class PlayerGravity : CustomMonoBehaviour
 			
 			
 
-			gravityVector = bPointGrav ? distanceFromRayHitPoint : distanceFromCollider;
+			gravityVector = bPointGrav ? distanceFromSelectedPoint : distanceFromCollider;
 			gravityVector.Normalize();
 			
 			rigidbody.AddForce (gravityVector * Global.gravIntensity * (player.state.touchingWall ? 0.75f : 1), ForceMode.Acceleration);
@@ -124,12 +131,8 @@ public class PlayerGravity : CustomMonoBehaviour
 
 	void StoreVariables()
 	{
-		rotationAngle = Vector3.Angle (vector, prevGravityVector);
+		rotationAngle = Vector3.Angle (prevGravityVector, vector);
 		rotationAxis = Vector3.Cross (prevGravityVector, vector);
-
-		//print ("gravity " + player.gravity.vector + " " + Time.frameCount + " prev " + prevGravityVector);
-
-
 	}
 	
 
@@ -149,33 +152,47 @@ public class PlayerGravity : CustomMonoBehaviour
 
 	public void SelectGravity()
 	{ 
-		if (InputX.Down (input.selectGravity))
-			blGravRayHit = Physics.Raycast (player.camera.t.position, player.camera.t.forward, out gravRayHit, Mathf.Infinity, player.motion.ignorePlayerMask);
+		if (InputX.Down(input.selectGravity))
+			didSelectObject = Physics.Raycast (player.camera.t.position, player.camera.t.forward, out gravRayHit, Mathf.Infinity, player.motion.ignorePlayerMask);
 
-		if (blGravRayHit)
+		if (didSelectObject)
 		{
+			//if you selected new grav source for player
 			if (input.selectGravity.Tapped)
-			{
+			{ 
+				//fresh start for player
 				rigidbody.isKinematic = false;
+				player.state.reachedGravSource = false;
+				player.motion.bAutoOrientMotion = false;
+
+				//store new gravity info
 				gravitySource = gravRayHit.collider;
 				gravityOn = true;
-				bPointGrav = (gravitySource != startingGravitySource) && !gravitySource.GetComponent<Rigidbody> ();
+
+				//only true if original grav source not selected and is not a rigidbody object
+				bPointGrav = (gravRayHit.collider != startingGravitySource) && !gravRayHit.collider.GetComponent<Rigidbody> ();
+
+				//prepare rigidbody source handling... i think? *************************
 				gravSourcePrevRotation = gravitySource.transform.rotation;
-				player.state.reachedGravSource = false;
-				if ((prevGravitySource != gravitySource) || (prevGravityOn !=  gravityOn)) 
-				{
-					player.state.touchingGround = false;
-					player.state.reachedGravSource = false;
-				}
-				player.motion.bAutoOrientMotion = false;
+
+				//I want to phase this out... here to make sure nothing breaks **********************
+				player.state.touchingGround = false;
+
+				//consumed selection
+				didSelectObject = false;
 			}
-			//Detect object you wish for originally selected rigidbody to gravitate towards
+			//if you selected new grav source for rigidbody object
 			else if (gravRayHit.rigidbody && Physics.Raycast(player.camera.t.position, player.camera.t.forward, out objectGravRayHit, Mathf.Infinity, player.motion.ignorePlayerMask) && (gravRayHit.collider != objectGravRayHit.collider))
 			{
 				selectedGravObject = gravRayHit.collider.transform.GetComponent <ObjectGravity> ();
 				selectedGravObject.gravitySource = objectGravRayHit.collider;
 				selectedGravObject.bGravOn = true;
+
+				//consumed selection
+				didSelectObject = false;
 			}
+			//may be unnecessary. just guarantees predictable bool behavior.
+			else if (InputX.Up(input.selectGravity)) didSelectObject = false;
 		}
 	}
 	

@@ -36,6 +36,7 @@ public class PlayerManager : CustomMonoBehaviour {
 	{
 		private PlayerManager player;
 		public bool orientCamera;
+		public bool orientPlayer;
 		public bool groundMotion;
 		public bool touchingWall;
 		public bool touchingGround;
@@ -74,3 +75,4 @@ public class PlayerManager : CustomMonoBehaviour {
 	}
 
 }
+
